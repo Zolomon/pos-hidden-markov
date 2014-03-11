@@ -5,59 +5,53 @@ import argparse
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('corpus', help="Path to the corpus file.")
-    parser.add_argument('word', nargs='?', help="Show word frequencies.")
-    parser.add_argument('pos', nargs='?', help="Show part-of-speech frequencies.")
+    parser.add_argument('corpus', help='Path to the corpus file.')
+    parser.add_argument('--word', help='Show word frequencies.', action='store_true')
+    parser.add_argument('--pos', help='Show part-of-speech frequencies.', action='store_true')
     args = parser.parse_args()
 
+    corpus_file = open(args.corpus)
+    corpus = [line.replace('\n', '') for line in corpus_file.readlines()]
+
     if args.word:
-        [print(frequency, ' ', word) for word, frequency in word_frequencies(args.corpus)]
+        [print('{0}'.format(str(frequency).rjust(12)), ' ', word) for word, frequency in word_frequencies(corpus)]
 
     if args.pos:
-        [print(frequency, ' ', pos) for pos, frequency in pos_frequencies(args.corpus)]
+        [print('{0}'.format(str(frequency).rjust(12)), ' ', pos) for pos, frequency in pos_frequencies(corpus)]
 
 
-def word_frequencies(filename):
-    word_freq = {}
-    corpus = open(filename)
-    # read file and
-    # calculate word frequencies
+def frequencies(corpus, index):
+    """ Will calculate the frequency of tokens in column /index/.
+    """
+    frequencies = {}
     for line in corpus:
-        line = line.replace('\n', '')
         if len(line.split('\t')) != 6:
             continue
-        ID, FORM, LEMMA, PLEMMA, POS, PPOS = line.split('\t')
 
-        if LEMMA in word_freq:
-            word_freq [LEMMA] += 1
+        row = line.split('\t')
+        key = row[index]
+
+        if key in frequencies:
+            frequencies[key] += 1
         else:
-            word_freq [LEMMA] = 1
+            frequencies[key] = 1
 
     import operator
 
-    sorted_words = sorted(word_freq.items(), key=operator.itemgetter(1))
+    sorted_words = sorted(frequencies.items(), key=operator.itemgetter(1))
     return sorted_words
 
-def pos_frequencies(filename):
-    pos_freq = {}
-    corpus = open(filename)
-    # read file and
-    # calculate pos frequencies
-    for line in corpus:
-        line = line.replace('\n', '')
-        if len(line.split('\t')) != 6:
-            continue
-        ID, FORM, LEMMA, PLEMMA, POS, PPOS = line.split('\t')
 
-        if POS in pos_freq:
-            pos_freq[POS] += 1
-        else:
-            pos_freq[POS] = 1
+def word_frequencies(corpus):
+    """ Will calculate the frequency for each word.
+    """
+    return frequencies(corpus, 1)
 
-    import operator
 
-    sorted_words = sorted(pos_freq.items(), key=operator.itemgetter(1))
-    return sorted_words
+def pos_frequencies(corpus):
+    """ Will calculate the frequency for each part-of-speech.
+    """
+    return frequencies(corpus, -2)
 
 
 if __name__ == '__main__':
