@@ -7,8 +7,7 @@ import argparse
 print('!!!')
 
 
-def calculate_word_pos_probabilities(file_contents):
-    sentences = parse_sentences(file_contents)
+def calculate_poses_for_word(sentences):
     total_pos_count = {}
     poses_for_word = {}
     # For each word, find all POSes.
@@ -29,6 +28,13 @@ def calculate_word_pos_probabilities(file_contents):
                     poses_for_word[form][pos] = 1
             else:
                 poses_for_word[form] = {pos: 1}
+
+    return poses_for_word, total_pos_count
+
+
+def calculate_word_pos_probabilities(file_contents):
+    sentences = parse_sentences(file_contents)
+    poses_for_word, total_pos_count = calculate_poses_for_word(sentences)
     probabilities = {}
     for (word, poses) in poses_for_word.items():
         for (pos, count) in poses.items():
