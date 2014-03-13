@@ -1,8 +1,10 @@
-import operator
-
+#!/usr/bin/python3
 __author__ = 'bengt'
 
+import operator
 import argparse
+
+print('!!!')
 
 
 def main():
@@ -11,29 +13,71 @@ def main():
     parser.add_argument('--word', help='Show word frequencies.', action='store_true')
     parser.add_argument('--pos', help='Show part-of-speech frequencies.', action='store_true')
     parser.add_argument('--bigrams', help='Print bigrams', action='store_true')
+    parser.add_argument('--posprob', help='Print bigram probablities', action='store_true')
+    parser.add_argument('--wordposprob', help='Probably for word given part-of-speech', action='store_true')
     args = parser.parse_args()
 
-    print(args)
-
     with open(args.corpus) as corpus_file:
-        file_contentes = corpus_file.readlines()
-        corpus = [line.replace('\n', '') for line in file_contentes]
+        file_contents = corpus_file.readlines()
+        corpus = [line.replace('\n', '') for line in file_contents]
 
         if args.word:
-            [print('{0}'.format(str(frequency).rjust(12)), ' ', word) for word, frequency in word_frequencies(corpus)]
+            for word, frequency in word_frequencies(corpus):
+                print('{0}'.format(str(frequency).rjust(12)), ' ', word)
 
         if args.pos:
-            [print('{0}'.format(str(frequency).rjust(12)), ' ', pos) for pos, frequency in pos_frequencies(corpus)]
+            for pos, frequency in pos_frequencies(corpus):
+                print('{0}'.format(str(frequency).rjust(12)), ' ', pos)
 
         if args.bigrams:
-            bigrams = calculate_bigrams(file_contentes)
+            bigrams = calculate_pos_bigrams(file_contents)
 
             for (k, v) in sorted(bigrams.items(), key=operator.itemgetter(1)):
                 print(v, '\t', k)
 
+        if args.posprob:
+            bigrams = calculate_pos_bigram_probabilities(file_contents)
+
+            bigrams = sorted(bigrams.items(), key=lambda x: x[1])
+
+            for (bigram, probability) in bigrams:
+                print('{0:>12.2%}'.format(probability), ' ', bigram)
+
+        if args.wordposprob:
+            sentences = parse_sentences(file_contents)
+            total_pos_count = {}
+            poses_for_word = {}
+            # For each word, find all POSes.
+            for sentence in sentences:
+                for word in sentence:
+                    id, form, lemma, plemma, pos, ppos = word
+                    form = form.lower()
+
+                    if pos in total_pos_count:
+                        total_pos_count[pos] += 1
+                    else:
+                        total_pos_count[pos] = 1
+
+                    if form in poses_for_word:
+                        if pos in poses_for_word[form]:
+                            poses_for_word[form][pos] += 1
+                        else:
+                            poses_for_word[form][pos] = 1
+                    else:
+                        poses_for_word[form] = {pos: 1}
+
+            word_pos_probabilities = {}
+            for (word, poses) in poses_for_word.items():
+                for (pos, pos_count) in poses.items():
+                    if word in word_pos_probabilities:
+                        if pos in word_pos_probabilities[word]
+                    else:
+                        word_pos_probabilities[word] = {pos: pos_count / float(total_pos_count[pos])}
+
 
 def frequencies(corpus, index, to_lower=False):
     """ Will calculate the frequency of tokens in column /index/.
+    :rtype : dict[str, int]
     """
     frequencies = {}
     for line in corpus:
@@ -58,12 +102,14 @@ def frequencies(corpus, index, to_lower=False):
 
 def word_frequencies(corpus):
     """ Will calculate the frequency for each word.
+    :rtype : dict[str, int]
     """
     return frequencies(corpus, 1, to_lower=True)
 
 
 def pos_frequencies(corpus):
     """ Will calculate the frequency for each part-of-speech.
+    :rtype : dict[str, int]
     """
     return frequencies(corpus, -2)
 
@@ -82,7 +128,7 @@ def parse_sentences(file_contentes):
     return sentences
 
 
-def calculate_bigrams(file_contents):
+def calculate_pos_bigrams(file_contents):
     sentences = parse_sentences(file_contents)
     bigrams = {}
     for sentence in sentences:
@@ -96,6 +142,37 @@ def calculate_bigrams(file_contents):
 
             prev_pos = pos
     return bigrams
+
+
+def calculate_pos_bigram_probabilities(file_contents):
+    sentences = parse_sentences(file_contents)
+    bigrams = {}
+
+    for sentence in sentences:
+        prev_pos = '<s>'
+        for word in sentence:
+            id, form, lemma, plemma, pos, ppos = word
+            if prev_pos in bigrams:
+                if pos in bigrams[prev_pos]:
+                    bigrams[prev_pos][pos] += 1
+                else:
+                    bigrams[prev_pos][pos] = 1
+            else:
+                bigrams[prev_pos] = {pos: 1}
+            prev_pos = pos
+
+    total_bigrams = 0
+    for (pos, next_poses) in bigrams.items():
+        for (next_pos, next_pos_count) in next_poses.items():
+            total_bigrams += next_pos_count
+
+    probabilities = {}
+    for (pos, next_poses) in bigrams.items():
+        total_pos_count = sum(next_poses.values())
+        for (next_pos, next_pos_count) in next_poses.items():
+            probabilities[pos + ' ' + next_pos] = (next_pos_count / float(total_pos_count))
+
+    return probabilities
 
 
 if __name__ == '__main__':
