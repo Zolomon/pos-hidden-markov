@@ -4,16 +4,18 @@ import argparse
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('corpus', help='The path to the corpus.')
+    parser.add_argument('corpus', help='Path to the corpus file.')
 
     args = parser.parse_args()
 
     corpus = [line.replace('\n', '') for line in open(args.corpus).readlines()]
 
     print('Accuracy: ')
-    accuracies = calculate_accuracy(corpus)
+    accuracies, total_match_count, total_pos_count = calculate_accuracy(corpus)
     for (pos, accuracy) in accuracies.items():
         print('{0:>12.2%}'.format(accuracy), pos)
+
+    print('Total Accuracy: {0:>12.2%}'.format(total_match_count/total_pos_count))
 
     print()
     print('Confusion Matrix:')
@@ -31,21 +33,25 @@ def calculate_accuracy(corpus):
 
         if POS == PPOS:
             if POS in occurances:
-                count, total = occurances[POS]
-                occurances[POS] = (count + 1, total + 1)
+                matches, total = occurances[POS]
+                occurances[POS] = (matches + 1, total + 1)
             else:
                 occurances[POS] = (1, 1)
         else:
             if POS in occurances:
-                count, total = occurances[POS]
-                occurances[POS] = (count, total + 1)
+                matches, total = occurances[POS]
+                occurances[POS] = (matches, total + 1)
             else:
                 occurances[POS] = (0, 1)
+    total_pos_count = 0
+    total_match_count = 0
     accuracies = {}
     for (key, value) in occurances.items():
-        count, total = value
-        accuracies[key] = count / float(total)
-    return accuracies
+        matches, total = value
+        accuracies[key] = matches / float(total)
+        total_match_count += matches
+        total_pos_count += total
+    return accuracies, total_match_count, total_pos_count
 
 
 def calculate_confusion_matrix(corpus):
@@ -74,17 +80,17 @@ def calculate_confusion_matrix(corpus):
 
 
 def draw_confusion_matrix(matrix, pos):
-    print('     ', end='')
+    print('    ', end='')
     #for p in pos:
     for (k,v) in matrix.items():
-        print('{0:>4}'.format(k), end=' ')
+        print('{0:>4}'.format(k), end='')
 
     print()
 
     for (correct_pos, row) in matrix.items():
-        print('{0:>4}'.format(correct_pos), end=' ')
+        print('{0:>4}'.format(correct_pos), end='')
         for (predicted_pos, value) in row.items():
-            print('{0:>4}'.format(value), end=' ')
+            print('{0:>4}'.format(value), end='')
         print()
 
 if __name__ == '__main__':
