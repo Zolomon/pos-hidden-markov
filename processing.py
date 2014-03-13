@@ -7,6 +7,35 @@ import argparse
 print('!!!')
 
 
+def calculate_word_pos_probabilities(file_contents):
+    sentences = parse_sentences(file_contents)
+    total_pos_count = {}
+    poses_for_word = {}
+    # For each word, find all POSes.
+    for sentence in sentences:
+        for word in sentence:
+            id, form, lemma, plemma, pos, ppos = word
+            form = form.lower()
+
+            if pos in total_pos_count:
+                total_pos_count[pos] += 1
+            else:
+                total_pos_count[pos] = 1
+
+            if form in poses_for_word:
+                if pos in poses_for_word[form]:
+                    poses_for_word[form][pos] += 1
+                else:
+                    poses_for_word[form][pos] = 1
+            else:
+                poses_for_word[form] = {pos: 1}
+    probabilities = {}
+    for (word, poses) in poses_for_word.items():
+        for (pos, count) in poses.items():
+            probabilities['{0} {1}'.format(word, pos)] = count / float(total_pos_count[pos])
+    return probabilities
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('corpus', help='Path to the corpus file.')
@@ -41,39 +70,14 @@ def main():
             bigrams = sorted(bigrams.items(), key=lambda x: x[1])
 
             for (bigram, probability) in bigrams:
-                print('{0:>12.2%}'.format(probability), ' ', bigram)
+                print('{0:>12.5f}'.format(probability), ' ', bigram)
 
         if args.wordposprob:
-            sentences = parse_sentences(file_contents)
-            total_pos_count = {}
-            poses_for_word = {}
-            # For each word, find all POSes.
-            for sentence in sentences:
-                for word in sentence:
-                    id, form, lemma, plemma, pos, ppos = word
-                    form = form.lower()
+            probabilities = calculate_word_pos_probabilities(file_contents)
+            probabilities = sorted(probabilities.items(), key=lambda x: x[1])
 
-                    if pos in total_pos_count:
-                        total_pos_count[pos] += 1
-                    else:
-                        total_pos_count[pos] = 1
-
-                    if form in poses_for_word:
-                        if pos in poses_for_word[form]:
-                            poses_for_word[form][pos] += 1
-                        else:
-                            poses_for_word[form][pos] = 1
-                    else:
-                        poses_for_word[form] = {pos: 1}
-
-            word_pos_probabilities = {}
-            for (word, poses) in poses_for_word.items():
-                for (pos, pos_count) in poses.items():
-                    if word in word_pos_probabilities:
-                        if pos in word_pos_probabilities[word]
-                    else:
-                        word_pos_probabilities[word] = {pos: pos_count / float(total_pos_count[pos])}
-
+            for (word_pos, probability) in probabilities:
+                print('{0:>12.5f}'.format(probability), ' ', word_pos)
 
 def frequencies(corpus, index, to_lower=False):
     """ Will calculate the frequency of tokens in column /index/.
