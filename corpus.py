@@ -20,7 +20,7 @@ class Corpus(object):
                 sentence = []
                 continue
 
-            sentence.append(line.split('\t'))
+            sentence.append(line.replace('\n', '').split('\t'))
         return sentences
 
     def get_sentences(self):

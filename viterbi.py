@@ -10,12 +10,7 @@ __author__ = 'bengt'
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('corpus', help='Path to corpus file.')
-
     args = parser.parse_args()
-
-    #with open(args.corpus) as corpus_file:
-        #file_contents = corpus_file.readlines()
-        #corpus = [line.replace('\n', '') for line in file_contents]
 
     corpus = Corpus(args.corpus)
 

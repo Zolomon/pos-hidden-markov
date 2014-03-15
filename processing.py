@@ -14,7 +14,8 @@ def main():
     parser.add_argument('--pos', help='Show part-of-speech frequencies.', action='store_true')
     parser.add_argument('--bigrams', help='Print bigrams', action='store_true')
     parser.add_argument('--posprob', help='Print bigram probablities', action='store_true')
-    parser.add_argument('--wordposprob', help='Probably for word given part-of-speech', action='store_true')
+    parser.add_argument('--wordposprob', help='Probability for word given part-of-speech', action='store_true')
+    parser.add_argument('--posperword', help='Get POS per word', action='store_true')
     args = parser.parse_args()
 
     corpus = Corpus(args.corpus)
@@ -48,6 +49,12 @@ def main():
         for (word_pos, probability) in probabilities:
             print('{0:>12.5f}'.format(probability), ' ', word_pos)
 
+    if args.posperword:
+        poses_for_word, total_pos_count = calculate_poses_for_word(corpus)
+        for (word, poses) in poses_for_word.items():
+            for (pos, count) in poses.items():
+                print('{0} {1} {2}'.format(word, pos, count))
+
 
 def frequencies(corpus, index, to_lower=False):
     """ Will calculate the frequency of tokens in column /index/.
@@ -66,6 +73,7 @@ def frequencies(corpus, index, to_lower=False):
 
     return freq
 
+
 def word_frequencies(corpus):
     """ Will calculate the frequency for each word.
     :rtype : dict[str, int]
@@ -81,13 +89,16 @@ def pos_frequencies(corpus):
 
 
 def calculate_poses_for_word(corpus):
+    """ Returns a tuple a tuple with a poses per word, and the total count of POSes.
+        :rtype : (dict[dict[str, int]], int)
+    """
     total_pos_count = {}
     poses_for_word = {}
     # For each word, find all POSes.
     for sentence in corpus.get_sentences():
         for word in sentence:
             id, form, lemma, plemma, pos, ppos = word
-            form = form.lower()
+            #form = form.lower()
 
             if pos in total_pos_count:
                 total_pos_count[pos] += 1
@@ -112,7 +123,6 @@ def calculate_word_pos_probabilities(corpus):
         for (pos, count) in poses.items():
             probabilities['{0} {1}'.format(word, pos)] = count / float(total_pos_count[pos])
     return probabilities
-
 
 
 def calculate_pos_bigrams(corpus):
@@ -153,6 +163,7 @@ def calculate_pos_bigram_probabilities(corpus):
             probabilities[pos + ' ' + next_pos] = (next_pos_count / float(total_pos_count))
 
     return probabilities
+
 
 if __name__ == '__main__':
     main()
