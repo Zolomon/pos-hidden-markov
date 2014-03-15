@@ -1,6 +1,7 @@
 import argparse
 import gc
 import operator
+from corpus import Corpus
 import processing
 
 __author__ = 'bengt'
@@ -12,75 +13,68 @@ def main():
 
     args = parser.parse_args()
 
-    with open(args.corpus) as corpus_file:
-        file_contents = corpus_file.readlines()
-        corpus = [line.replace('\n', '') for line in file_contents]
+    #with open(args.corpus) as corpus_file:
+        #file_contents = corpus_file.readlines()
+        #corpus = [line.replace('\n', '') for line in file_contents]
 
-        pos_frequencies = processing.pos_frequencies(corpus)
-        word_pos_probabilities = processing.calculate_word_pos_probabilities(file_contents)
-        bigram_probabilities = processing.calculate_pos_bigram_probabilities(file_contents)
+    corpus = Corpus(args.corpus)
 
-        sentences = processing.parse_sentences(file_contents)
-        poses_for_words, total_pos_count = processing.calculate_poses_for_word(sentences)
+    #pos_frequencies = processing.pos_frequencies(corpus)
+    word_pos_probabilities = processing.calculate_word_pos_probabilities(corpus)
+    bigram_probabilities = processing.calculate_pos_bigram_probabilities(corpus)
+    poses_for_words, total_pos_count = processing.calculate_poses_for_word(corpus)
 
-        file_contents = None  # release memory
-        corpus = None  # release memory
-        gc.collect()  # collect free memory
+    new_sentences = []
+    for sentence in corpus.get_sentences():
+        parent_trellis = {'<s>': {'probability': 1, 'parent': None}}
 
-        new_sentences = []
-        for sentence in sentences:
-            parent_trellis = {}
+        for word in sentence:
+            id, form, lemma, plemma, current_word_pos, ppos = word
+            form = form.lower()  # to canonical form
 
-            pos = '<s>'
-            parent_trellis[pos] = {'probability': 1, 'parent': None}
+            trellis = {}
 
-            for word in sentence:
-                id, form, lemma, plemma, pos, ppos = word
-                form = form.lower()  # to canonical form
+            # P(W|T)
+            for (pos_for_word, count) in poses_for_words[form].items():
+                probability_word_given_pos = word_pos_probabilities['{0} {1}'.format(form, pos_for_word)]
 
-                trellis = {}
+                probability_pos_given_prevpos = {}
+                for prev_pos in parent_trellis:
+                    probability = parent_trellis[prev_pos]['probability']
+                    bigram = '{0} {1}'.format(prev_pos, pos_for_word)
+                    if not bigram in bigram_probabilities:
+                        probability_bigram = 0.000001
+                    else:
+                        # P(T_i|T_i-1)
+                        probability_bigram = bigram_probabilities[bigram]
+                    probability *= probability_bigram
+                    probability_pos_given_prevpos[prev_pos] = probability
+                max_probability = max(probability_pos_given_prevpos.items(), key=lambda x: x[1])
 
-                # P(W|T)
-                for (pos, count) in poses_for_words[form].items():
-                    probability_word_given_pos = word_pos_probabilities['{0} {1}'.format(form, pos)]
+                trellis[pos_for_word] = {}
+                trellis[pos_for_word]['probability'] = probability_word_given_pos * max_probability[1]
+                trellis[pos_for_word]['parent'] = {max_probability[0]: parent_trellis[max_probability[0]]}
 
-                    probability_pos_given_prevpos = {}
-                    for prev_pos in parent_trellis:
-                        probability = parent_trellis[prev_pos]['probability']
-                        bigram = '{0} {1}'.format(prev_pos, pos)
-                        if not bigram in bigram_probabilities:
-                            probability_bigram = 0.000001
-                        else:
-                            # P(T_i|T_i-1)
-                            probability_bigram = bigram_probabilities[bigram]
-                        probability *= probability_bigram
-                        probability_pos_given_prevpos[prev_pos] = probability
-                    max_probability = max(probability_pos_given_prevpos.items(), key=lambda x: x[1])
+            parent_trellis = trellis
 
-                    trellis[pos] = {}
-                    trellis[pos]['probability'] = probability_word_given_pos * max_probability[1]
-                    trellis[pos]['parent'] = {max_probability[0]: parent_trellis[max_probability[0]]}
+        optimal = max(trellis.items(), key=lambda x: x[1]['probability'])
+        prev_path = { optimal[0]: optimal[1] }
+        current_id = int(sentence[-1][0])-1
 
-                parent_trellis = trellis
+        while prev_path != None:
+            predicted = prev_path.keys()
+            sentence[current_id][-1] = list(predicted)[0]
+            prev_path = prev_path[list(predicted)[0]]['parent']
+            current_id -= 1
 
-            optimal = max(trellis.items(), key=lambda x: x[1]['probability'])
-            prev_path = { optimal[0]: optimal[1] }
-            current_id = int(sentence[-1][0])-1
-
-            while prev_path != None:
-                predicted = prev_path.keys()
-                sentence[current_id][-1] = list(predicted)[0]
-                prev_path = prev_path[list(predicted)[0]]['parent']
-                current_id -= 1
-
-            for word in sentence:
-                id, form, lemma, plemma, pos, ppos = word
-                # if id == 1:
-                #     print()
-                # else:
-                print(id, '\t', form, '\t', lemma, '\t', plemma, '\t', pos, '\t', ppos)
-        print()
-        print()
+        for word in sentence:
+            id, form, lemma, plemma, pos, ppos = word
+            # if id == 1:
+            #     print()
+            # else:
+            print(id, '\t', form, '\t', lemma, '\t', plemma, '\t', pos, '\t', ppos)
+    print()
+    print()
 
 if __name__ == '__main__':
     main()
