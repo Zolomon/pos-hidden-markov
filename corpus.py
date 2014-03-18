@@ -12,7 +12,7 @@ class Corpus(object):
     @staticmethod
     def parse_sentences(lines):
         sentences = []
-        sentence = []
+        sentence = [[0, '<s>', '<s>', '<s>', '<s>', '<s>']]
         for line in lines:
             if line == '\n':
                 # new sentence
