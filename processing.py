@@ -117,6 +117,8 @@ def calculate_poses_for_word(corpus):
 
 
 def calculate_word_pos_probabilities(corpus):
+    """ :rtype: dict[str, float]
+    """
     poses_for_word, total_pos_count = calculate_poses_for_word(corpus)
     probabilities = {}
     for (word, poses) in poses_for_word.items():

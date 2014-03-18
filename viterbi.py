@@ -25,8 +25,7 @@ def main():
 
         for word in sentence:
             id, form, lemma, plemma, current_word_pos, ppos = word
-            form = form.lower()  # to canonical form
-
+            #form = form.lower()  # to canonical form
             trellis = {}
 
             # P(W|T)

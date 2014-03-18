@@ -17,7 +17,7 @@ class Corpus(object):
             if line == '\n':
                 # new sentence
                 sentences.append(sentence)
-                sentence = []
+                sentence = [[0, '<s>', '<s>', '<s>', '<s>', '<s>']]
                 continue
 
             sentence.append(line.replace('\n', '').split('\t'))

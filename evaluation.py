@@ -10,13 +10,13 @@ def main():
 
     args = parser.parse_args()
 
-    #corpus = [line.replace('\n', '') for line in open(args.corpus).readlines()]
     corpus = Corpus(args.corpus)
 
     print('Accuracy: ')
     accuracies, total_match_count, total_pos_count = calculate_accuracy(corpus)
     for (pos, accuracy) in accuracies.items():
         print('{0:>12.2%}'.format(accuracy), pos)
+
 
     print('Total Accuracy: {0:>12.2%}'.format(total_match_count/total_pos_count))
 
@@ -73,7 +73,10 @@ def calculate_confusion_matrix(corpus):
     for sentence in corpus.get_sentences():
         for word in sentence:
             ID, FORM, LEMMA, PLEMMA, POS, PPOS = word
-            matrix[POS][PPOS] += 1
+            if PPOS in matrix[POS]:
+                matrix[POS][PPOS] += 1
+            else:
+                matrix[POS][PPOS] = 1
 
     return matrix, pos
 
