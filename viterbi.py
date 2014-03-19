@@ -40,7 +40,7 @@ def main():
                     probability = parent_trellis[prev_pos]['probability']
                     bigram = '{0} {1}'.format(prev_pos, pos_for_word)
                     if not bigram in bigram_probabilities:
-                        probability_bigram = 0.000001
+                        probability_bigram = 0.0001  # Gives highest value on the development set for unknown bigrams
                     else:
                         # P(T_i|T_i-1)
                         probability_bigram = bigram_probabilities[bigram]
@@ -49,7 +49,8 @@ def main():
                 max_probability = max(probability_pos_given_prevpos.items(), key=lambda x: x[1])
 
                 trellis[most_common_pos[0]] = {}
-                trellis[most_common_pos[0]]['probability'] = 0.000001
+                trellis[most_common_pos[0]][
+                    'probability'] = 0.0001  # Gives highest value on the development set for unknown poses
                 trellis[most_common_pos[0]]['parent'] = {max_probability[0]: parent_trellis[max_probability[0]]}
             else:
                 for (pos_for_word, count) in poses_for_words[form].items():
@@ -60,7 +61,8 @@ def main():
                         probability = parent_trellis[prev_pos]['probability']
                         bigram = '{0} {1}'.format(prev_pos, pos_for_word)
                         if not bigram in bigram_probabilities:
-                            probability_bigram = 0.000001
+                            probability_bigram = 0.0001  # Gives highest value on the development set for
+                            # unknown bigrams
                         else:
                             # P(T_i|T_i-1)
                             probability_bigram = bigram_probabilities[bigram]
